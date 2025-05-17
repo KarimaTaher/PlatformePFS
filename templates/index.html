@@ -57,6 +57,19 @@
                 justify-content: center;
             }
 
+         /* Affiche la liste au survol */
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+/* Positionne la liste au-dessus */
+        .custom-dropdown-top {
+            top: auto;
+            bottom: 100%;
+            transform: translateY(-5px);
+            width: 200px;
+         }
+
 
         </style>
 
@@ -72,7 +85,7 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarResponsive">
                     <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
-                        <li class="nav-item"><a class="nav-link" href=".">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
                         <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
                         <li class="nav-item"><a class="nav-link" href="#portfolio">Drivers</a></li>
                         <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
@@ -83,7 +96,7 @@
             </div>
         </nav>
         <!-- Masthead-->
-        <header class="masthead">
+        <header class="masthead" id="home">
             <div class="container">
                 <div class="masthead-subheading">Something</div>
                 <div class="masthead-heading text-uppercase">Predict USA Petroleum with AI Precision</div>
@@ -102,7 +115,7 @@
 
             <!-- Service 1 -->
             <div class="col-md-4 mb-4">
-                <a href="oil-prediction.html" class="text-decoration-none text-dark">
+                <a href="%on.html" class="text-decoration-none text-dark">
                     <div class="card shadow rounded-4 h-100 border-0">
                         <div class="card-body">
                             <span class="fa-stack fa-4x mb-3">
@@ -227,11 +240,11 @@
                                 <div class="portfolio-hover">
                                     <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
                                 </div>
-                                <img class="img-fluid" src="assets/img/portfolio/5.jpg" alt="..." />
+                                <img class="img-fluid" src="{{url_for('static', filename='assets/img/portfolio/5.jpg')}}" alt="..." />
                             </a>
                             <div class="portfolio-caption">
-                                <div class="portfolio-caption-heading">Southwest</div>
-                                <div class="portfolio-caption-subheading text-muted"></div>
+                                <div class="portfolio-caption-heading">Inflation</div>
+                                <div class="portfolio-caption-subheading text-muted">Press</div>
                             </div>
                         </div>
                     </div>
@@ -258,11 +271,11 @@
             <div class="container">
                 <div class="text-center">
                     <h2 class="section-heading text-uppercase">About</h2>
-                    <h3 class="section-subheading text-muted">Lorem ipsum dolor sit amet consectetur.</h3>
+                    <h3 class="section-subheading text-muted">Your guide to understanding oil petroleum dynamics.</h3>
                 </div>
                 <ul class="timeline">
-                    <li>
-                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="{{ url_for('static', filename='assets/img/about/ourMission.jpg') }}" alt=".hihi." /></div>
+                    <li >
+                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="{{ url_for('static', filename='assets/img/about/1.jpeg') }}" alt=".hihi." /></div>
                         <div class="timeline-panel">
                             <div class="timeline-heading">
                                 <h4>1</h4>
@@ -272,7 +285,7 @@
                         </div>
                     </li>
                     <li class="timeline-inverted">
-                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="assets/img/about/2.jpg" alt="..." /></div>
+                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="{{ url_for('static', filename='assets/img/about/2.avif') }}" alt="..." /></div>
                         <div class="timeline-panel">
                             <div class="timeline-heading">
                                 <h4>2</h4>
@@ -281,8 +294,8 @@
                             <div class="timeline-body"><p class="text-muted">Our main service is an advanced oil price prediction model built on cutting-edge machine learning techniques and historical market data. We also provide data visualization tools, analytical dashboards, and real-time news integration to support strategic decision-making in the energy sector.</p></div>
                         </div>
                     </li>
-                    <li>
-                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="assets/img/about/3.jpg" alt="..." /></div>
+                    <li >
+                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="{{ url_for('static', filename='assets/img/about/3.webp') }}" alt="..." /></div>
                         <div class="timeline-panel">
                             <div class="timeline-heading">
                                 <h4>3</h4>
@@ -292,7 +305,7 @@
                         </div>
                     </li>
                     <li class="timeline-inverted">
-                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="assets/img/about/4.jpg" alt="..." /></div>
+                        <div class="timeline-image"><img class="rounded-circle img-fluid" src="{{ url_for('static', filename='assets/img/about/4.jpeg') }}"  alt="..." /></div>
                         <div class="timeline-panel">
                             <div class="timeline-heading">
                                 <h4>4</h4>
@@ -301,17 +314,7 @@
                             <div class="timeline-body"><p class="text-muted">Our user-friendly web interface and commitment to innovation aim to make powerful AI technologies accessible to all. We strive to support smarter, more informed decisions in the energy industry and promote the use of AI for sustainable and efficient resource management.</p></div>
                         </div>
                     </li>
-                    <li class="timeline-inverted">
-                        <div class="timeline-image">
-                            <h4>
-                                Be Part
-                                <br />
-                                Of Our
-                                <br />
-                                Story!
-                            </h4>
-                        </div>
-                    </li>
+                    
                 </ul>
             </div>
         </section>
@@ -319,43 +322,47 @@
         <section class="page-section bg-light" id="team">
             <div class="container">
                 <div class="text-center">
-                    <h2 class="section-heading text-uppercase">Our Amazing Team</h2>
-                    <h3 class="section-subheading text-muted">Lorem ipsum dolor sit amet consectetur.</h3>
+                    <h2 class="section-heading text-uppercase"> The Tree Of Us</h2>
+                    <h3 class="section-subheading text-muted">Together, we make the impossible <b>Possible</b>.</h3>
                 </div>
                 <div class="row">
                     <div class="col-lg-4">
                         <div class="team-member">
-                            <img class="mx-auto rounded-circle" src="assets/img/team/1.jpg" alt="..." />
-                            <h4>Parveen Anand</h4>
-                            <p class="text-muted">Lead Designer</p>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Parveen Anand Twitter Profile"><i class="fab fa-twitter"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Parveen Anand Facebook Profile"><i class="fab fa-facebook-f"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Parveen Anand LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                            <img class="mx-auto rounded-circle" src="{{url_for('static', filename='assets/img/team/chaimae.jpeg' )}}" alt="..." />
+                            <h4>Zemri Chaimae</h4>
+                            <p class="text-muted">AI Engineer</p>
+                            <a class="btn btn-dark btn-social mx-2" href="mailto:c.zemri.26@gmail.com" aria-label="Parveen Anand Twitter Profile"><i class="fas fa-envelope"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.facebook.com/chaimae.zemri" aria-label="Parveen Anand Facebook Profile"><i class="fab fa-facebook-f"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.linkedin.com/in/zemrichaimae/" aria-label="Parveen Anand LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-4">
                         <div class="team-member">
-                            <img class="mx-auto rounded-circle" src="assets/img/team/2.jpg" alt="..." />
-                            <h4>Diana Petersen</h4>
-                            <p class="text-muted">Lead Marketer</p>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Diana Petersen Twitter Profile"><i class="fab fa-twitter"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Diana Petersen Facebook Profile"><i class="fab fa-facebook-f"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Diana Petersen LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                            <img class="mx-auto rounded-circle" src="{{url_for('static', filename='assets/img/team/Me.jpeg' ) }}" alt="..." />
+                            <h4>Taher Karima</h4>
+                            <p class="text-muted">QA Engineer </p>
+                            <a class="btn btn-dark btn-social mx-2" href="mailto:taherkarima24@gmail.com" aria-label="Diana Petersen Twitter Profile"><i class="fas fa-envelope"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.facebook.com/profile.php?id=100035070528479" aria-label="Diana Petersen Facebook Profile"><i class="fab fa-facebook-f"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.linkedin.com/in/karima-taher-006261250/" aria-label="Diana Petersen LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-4">
                         <div class="team-member">
-                            <img class="mx-auto rounded-circle" src="assets/img/team/3.jpg" alt="..." />
-                            <h4>Larry Parker</h4>
-                            <p class="text-muted">Lead Developer</p>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Larry Parker Twitter Profile"><i class="fab fa-twitter"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Larry Parker Facebook Profile"><i class="fab fa-facebook-f"></i></a>
-                            <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Larry Parker LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                            <img class="mx-auto rounded-circle" src="{{url_for('static', filename='assets/img/team/2.jpg')}}" alt="..." />
+                            <h4>Zidane Noufissa</h4>
+                            <p class="text-muted">Data Scientist </p>
+                            <a class="btn btn-dark btn-social mx-2" href="mailto:zidanenoufissa@gmail.com" aria-label="Larry Parker Twitter Profile"><i class="fas fa-envelope"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.facebook.com/noufissa.zidane.5" aria-label="Larry Parker Facebook Profile"><i class="fab fa-facebook-f"></i></a>
+                            <a class="btn btn-dark btn-social mx-2" href="https://www.linkedin.com/in/noufissa-zidane-245b3625a/" aria-label="Larry Parker LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
                         </div>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-lg-8 mx-auto text-center"><p class="large text-muted">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aut eaque, laboriosam veritatis, quos non quis ad perspiciatis, totam corporis ea, alias ut unde.</p></div>
+                   <div class="col-lg-8 mx-auto text-center">
+                       <p class="large text-muted">
+                            We believe that collaboration and curiosity are the driving forces of innovation. Our team is committed to pushing boundaries and delivering excellence.
+                       </p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -364,16 +371,16 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-md-3 col-sm-6 my-3">
-                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="assets/img/logos/microsoft.svg" alt="..." aria-label="Microsoft Logo" /></a>
+                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="{{url_for('static', filename='assets/img/logos/1.png')}}" alt="..." aria-label="Microsoft Logo" /></a>
                     </div>
                     <div class="col-md-3 col-sm-6 my-3">
-                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="assets/img/logos/google.svg" alt="..." aria-label="Google Logo" /></a>
+                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="{{url_for('static', filename='assets/img/logos/2.png')}}" alt="..." aria-label="Google Logo" /></a>
                     </div>
                     <div class="col-md-3 col-sm-6 my-3">
-                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="assets/img/logos/facebook.svg" alt="..." aria-label="Facebook Logo" /></a>
+                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="{{url_for('static', filename='assets/img/logos/3.jpeg')}}" style=" height: 7.75rem;" alt="..." aria-label="Facebook Logo" /></a>
                     </div>
                     <div class="col-md-3 col-sm-6 my-3">
-                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="assets/img/logos/ibm.svg" alt="..." aria-label="IBM Logo" /></a>
+                        <a href="#!"><img class="img-fluid img-brand d-block mx-auto" src="{{url_for('static', filename='assets/img/logos/4.png')}}" style=" height: 10rem;" alt="..." aria-label="IBM Logo" /></a>
                     </div>
                 </div>
             </div>
@@ -383,7 +390,7 @@
             <div class="container">
                 <div class="text-center">
                     <h2 class="section-heading text-uppercase">Contact Us</h2>
-                    <h3 class="section-subheading text-muted">Lorem ipsum dolor sit amet consectetur.</h3>
+                    <h3 class="section-subheading text-muted">If have any question don't hesitate.</h3>
                 </div>
                 <!-- * * * * * * * * * * * * * * *-->
                 <!-- * * SB Forms Contact Form * *-->
@@ -446,12 +453,28 @@
         <footer class="footer py-4">
             <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-lg-4 text-lg-start">Copyright &copy; Your Website 2023</div>
+                    <div class="col-lg-4 text-lg-start">Copyright &copy; The tree of us Vs oil prediction 2025</div>
+                    <!--
+                    
                     <div class="col-lg-4 my-3 my-lg-0">
                         <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
                         <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                         <a class="btn btn-dark btn-social mx-2" href="#!" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                     </div>
+                    -->
+            <div class="col-lg-4 my-3 my-lg-0 dropdown">
+  <div class="dropdown-toggle" id="resourceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+    Resource
+  </div>
+  <ul class="dropdown-menu custom-dropdown-top" aria-labelledby="resourceDropdown">
+    <li><a class="dropdown-item" href="#">Reports</a></li>
+    <li><a class="dropdown-item" href="#">Datasets</a></li>
+    <li><a class="dropdown-item" href="#">White Papers</a></li>
+    <li><a class="dropdown-item" href="#">Documentation</a></li>
+  </ul>
+</div>
+
+
                     <div class="col-lg-4 text-lg-end">
                         <a class="link-dark text-decoration-none me-3" href="#!">Privacy Policy</a>
                         <a class="link-dark text-decoration-none" href="#!">Terms of Use</a>
