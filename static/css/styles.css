@@ -612,6 +612,7 @@ progress {
 .img-fluid {
   max-width: 100%;
   height: auto;
+  
 }
 
 .img-thumbnail {
@@ -11136,9 +11137,8 @@ header.masthead .masthead-heading {
   margin-left: 0;
   text-align: center;
   color: white;
-  border: 7px solid #e9ecef;
+  border: 5px solid #e9ecef;
   border-radius: 100%;
-  background-color: #ffc800;
 }
 .timeline > li .timeline-image h4, .timeline > li .timeline-image .h4 {
   font-size: 10px;
@@ -11175,6 +11175,16 @@ header.masthead .masthead-heading {
 .timeline .timeline-body > ul,
 .timeline .timeline-body > p {
   margin-bottom: 0;
+}
+.timeline-image img {
+  width: 100%;             /* Tu peux ajuster cette taille */
+  height: 160px;
+  object-fit: cover;        /* Pour bien remplir le cercle */
+       /* Assure que ça reste un cercle */
+     /* Optionnel : un joli bord blanc */
+   /* Optionnel : ombre douce */
+  display: block;
+  margin: 0 auto;
 }
 
 @media (min-width: 768px) {
@@ -11263,7 +11273,7 @@ header.masthead .masthead-heading {
 }
 
 .img-brand {
-  height: 2.75rem;
+  height: 3rem;
 }
 
 section#contact {
