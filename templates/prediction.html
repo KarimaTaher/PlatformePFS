@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Prédictions | Plateforme Pétrole</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <h1 class="mb-4">Prédictions du prix du pétrole</h1>
+        
+
+        <!-- 🔽 Dropdown choix modèle -->
+        <div class="mb-4">
+            <label for="modelSelect" class="form-label">Choisissez un modèle :</label>
+            <select class="form-select" id="modelSelect" onchange="onModelChange(this.value)">
+                <option value="RandomForest">RandomForest</option>
+                <option value="XGBoost">XGBoost</option>
+                <option value="LinearRegression">LinearRegression</option>
+            </select>
+        </div>
+        <!-- 🛢️ Carte du prix du pétrole -->
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="card bg-dark text-white shadow border-0">
+                    <div class="row g-0 align-items-center">
+                        <div class="col-md-5">
+                            <img src="{{ url_for('static', filename='assets/img/homepage.jpg') }}" class="img-fluid rounded-start" alt="Pétrole">
+                        </div>
+                        <div class="col-md-7">
+                            <div class="card-body">
+                                <h5 class="card-title">Prix actuel du pétrole</h5>
+                                <h2 class="display-5"><i class="bi bi-droplet-half me-2"></i>81.24 <small>USD/baril</small></h2>
+                                <p class="card-text">Mise à jour simulée le <strong>17 mai 2025</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+  
+
+        
+
+        <!-- 📈 Graphique simulé -->
+        <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename='assets/img/prediction_plot.png') }}" class="img-fluid rounded" alt="Graphique des prédictions">
+        </div>
+
+        <!-- 📋 Informations du modèle -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Informations du modèle</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Nom :</strong> RandomForest</li>
+                    <li class="list-group-item"><strong>Type :</strong> Arbre de décision</li>
+                    <li class="list-group-item"><strong>Date d’entraînement :</strong> 2025-05-17</li>
+                    <li class="list-group-item"><strong>Précision :</strong> 92%</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        function onModelChange(value) {
+            alert("Changement vers le modèle : " + value);
+            // Tu pourras ici déclencher un appel AJAX plus tard
+        }
+    </script>
+</body>
+</html>
