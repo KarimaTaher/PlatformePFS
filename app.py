@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, jsonify , request
+from flask import Flask, render_template, jsonify , request, send_file
 import numpy as np
 import joblib
 import tensorflow as tf
@@ -7,7 +7,16 @@ from tensorflow.keras.losses import mse
 from datetime import datetime
 import pandas as pd
 import json
+import math
+import io
+from io import BytesIO
+from fpdf import FPDF
 from model2.predict_xgb import predict_with_xgb
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import tempfile
+import os
 
 app = Flask(__name__)
 
@@ -213,6 +222,147 @@ def prediction():
                            selected_model=selected_model,
                            model_info=model_info)
    
+@app.route('/data')
+def data_table():
+   df, _ = get_full_data()
+   df['Date'] = pd.to_datetime(df['Date'])
+   df['Year'] = df['Date'].dt.year
+
+   # Trier les années de la plus récente à la plus ancienne
+   available_years = sorted(df['Year'].unique(), reverse=True)
+
+   # Récupérer l’année sélectionnée (par défaut la plus récente)
+   selected_year = int(request.args.get('year', available_years[0]))
+
+   # Filtrer les données de l’année sélectionnée
+   filtered_df = df[df['Year'] == selected_year]
+
+   return render_template('data.html',
+                           years=available_years,
+                           selected_year=selected_year,
+                           data=filtered_df.to_dict(orient='records'))
+
+
+@app.route('/export/excel')
+def export_excel():
+   df, _ = get_full_data()
+   output = io.BytesIO()
+   with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+      df.to_excel(writer, index=False, sheet_name='Data')
+   output.seek(0)
+   return send_file(output, download_name="donnees_petrole.xlsx", as_attachment=True)
+def clean_text_for_pdf(text):
+   replacements = {
+      '–': '-',   # tiret moyen
+      '—': '-',   # tiret long
+      '“': '"',
+      '”': '"',
+      '’': "'",
+      '‘': "'",
+      '…': '...',
+      '•': '-',
+      '°': ' degrees',
+      '€': 'EUR',
+      '©': '(c)',
+      '®': '(R)',
+      '™': '(TM)',
+      '→': '->',
+      '←': '<-',
+      '±': '+/-',
+      '×': 'x',
+      '\u00a0': ' ',  # espace insécable
+   }
+   for unicode_char, ascii_equiv in replacements.items():
+      text = text.replace(unicode_char, ascii_equiv)
+   return text
+
+@app.route('/export/pdf')
+def export_pdf():
+   df, _ = get_full_data()
+
+   # Renommer les colonnes
+   df = df.rename(columns={
+      'Date': 'Date',
+      'Prix': 'Price',
+      'Import (Thousand Barrels )': 'Import',
+      'Export': 'Export',
+      'Production(Thousand Barrels per Day)': 'Production',
+      'Inflation (%)': 'Inflation',
+      'GDP(Billions of USD)': 'GDP',
+      'Event': 'Event'
+   })
+
+   # Convertir Date en datetime et grouper par année
+   df['Date'] = pd.to_datetime(df['Date'])
+   df['Year'] = df['Date'].dt.year
+   df_annual = df.groupby('Year')[['Price', 'Import', 'Export', 'Production', 'Inflation', 'GDP']].mean().reset_index()
+
+   # Créer le graphique
+   plt.figure(figsize=(10, 5))
+   for column in ['Price', 'Import', 'Export', 'Production', 'Inflation', 'GDP']:
+      plt.plot(df_annual['Year'], df_annual[column], label=column)
+   plt.title('Annual Trends')
+   plt.xlabel('Year')
+   plt.ylabel('Value')
+   plt.legend()
+   plt.tight_layout()
+
+   # Sauvegarder le graphique dans un fichier temporaire
+   with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_image:
+      plt.savefig(tmp_image.name, format='png')
+      tmp_image_path = tmp_image.name
+
+   # Générer le PDF
+   pdf = FPDF()
+   pdf.add_page()
+   pdf.set_font("Arial", 'B', 12)
+   pdf.cell(200, 10, 'Petroleum Market Trends in the USA', ln=True, align='C')
+
+   # Insérer le graphique dans le PDF
+   pdf.image(tmp_image_path, x=10, y=25, w=190)
+   pdf.ln(105)
+
+   # Ajouter le texte d’analyse
+   pdf.set_font("Arial", '', 10)
+   analysis = (
+      "GDP reflects the level of economic activity and energy consumption. When the economy grows, energy demand rises, often pushing petroleum prices upward. In contrast, economic downturns reduce demand, which may drive prices down.\n\n"
+      "Imports influence domestic supply. An increase in oil imports can expand supply and reduce prices. Conversely, a decline in imports may cause prices to rise if local production can't compensate.\n\n"
+      "Exports reflect international demand. When exports rise, domestic supply tightens, potentially increasing local prices. Lower exports may ease domestic availability, stabilizing or lowering prices.\n\n"
+      "Oil production is central to supply dynamics. Higher production tends to lower prices by increasing availability. Conversely, reduced output may lead to price hikes. Tracking production trends is key to understanding price movements.\n\n"
+      "Inflation affects petroleum prices through rising costs and currency value changes. Higher inflation often increases energy production and transport costs, pushing oil prices upward. It also impacts interest rates and exchange rates, both of which influence oil pricing.\n\n"
+      "Global events—including conflicts, economic crises, and policy decisions—can abruptly disrupt supply or demand. These shifts often lead to significant oil price fluctuations, making geopolitical and economic awareness essential for understanding petroleum market trends."
+   )
+
+   for paragraph in analysis.split('\n\n'):
+      paragraph_clean = clean_text_for_pdf(paragraph)
+      pdf.multi_cell(0, 8, paragraph_clean)
+      pdf.ln(1)
+
+   # Ajouter tableau résumé (moyennes annuelles)
+   pdf.add_page()
+   pdf.set_font("Arial", 'B', 10)
+   col_widths = [20, 20, 20, 20, 25, 20, 25]
+   headers = ['Year', 'Price', 'Import', 'Export', 'Production', 'Inflation', 'GDP']
+   for i, header in enumerate(headers):
+      pdf.cell(col_widths[i], 8, header, border=1)
+   pdf.ln()
+
+   pdf.set_font("Arial", '', 8)
+   for row in df_annual.itertuples(index=False):
+      for i, value in enumerate(row):
+         pdf.cell(col_widths[i], 8, f"{value:.2f}" if isinstance(value, float) else str(value), border=1)
+      pdf.ln()
+
+   # Retourner le PDF
+   pdf_output = BytesIO()
+   pdf.output(pdf_output)
+   pdf_output.seek(0)
+   
+   # Après l’envoi du fichier PDF
+   os.remove(tmp_image_path)
+
+   return send_file(pdf_output, as_attachment=True, download_name='petroleum_trends.pdf', mimetype='application/pdf')
+
 
 @app.route('/')
 def homepage():
