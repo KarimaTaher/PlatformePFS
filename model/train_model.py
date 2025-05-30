@@ -1,30 +1,34 @@
-import tensorflow as tf
-import pandas as pd
+import os
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense
 import joblib
 
-def prepare_data(file_path='model/petrole_ai.xlsx', seq_length=24):
+# Préparation des données
+def prepare_data(file_path='model/petrole_ai.xlsx', seq_length=12):
     df = pd.read_excel(file_path, header=1)
     df.columns = ['Date','Prix', 'Import (Thousand Barrels )', 'Export',
-                'Production(Thousand Barrels per Day)', 'Inflation (%)',
-                'GDP(Billions of USD)', 'Event']
+                  'Production(Thousand Barrels per Day)', 'Inflation (%)',
+                  'GDP(Billions of USD)', 'Event']
 
-    # Encodage OneHot de la colonne "Event"
+    # OneHot Encoding de la colonne 'Event'
     encoder = OneHotEncoder(sparse_output=False, drop='first')
     event_encoded = encoder.fit_transform(df[['Event']])
     event_df = pd.DataFrame(event_encoded, index=df.index, columns=encoder.get_feature_names_out(['Event']))
     df = pd.concat([df.drop('Event', axis=1), event_df], axis=1)
 
+    # Normalisation (hors Date)
     scaler = MinMaxScaler()
     scaled_data = scaler.fit_transform(df.drop('Date', axis=1))
 
+    # Création des séquences
     def create_sequences(data, target_index, seq_length):
         X, y = [], []
         for i in range(seq_length, len(data)):
-            X.append(data[i-seq_length:i])
+            X.append(data[i - seq_length:i])
             y.append(data[i, target_index])
         return np.array(X), np.array(y)
 
@@ -32,38 +36,91 @@ def prepare_data(file_path='model/petrole_ai.xlsx', seq_length=24):
     X, y = create_sequences(scaled_data, target_index, seq_length)
     return X, y, scaler, target_index, scaled_data
 
-# Préparation des données
-seq_length = 24
-X, y, scaler, target_index, scaled_data = prepare_data(seq_length=seq_length)
+# Entraînement du modèle
+def train_model(X, y, target_index, scaled_data, seq_length=12):
+    split_idx = int(0.85 * len(X))
+    X_train, X_test = X[:split_idx], X[split_idx:]
+    y_train, y_test = y[:split_idx], y[split_idx:]
 
-# Séparation entraînement/test : 70% / 30%
-split_idx = int(0.7 * len(X))
-X_train, y_train = X[:split_idx], y[:split_idx]
-X_test, y_test = X[split_idx:], y[split_idx:]
+    # Définition du modèle
+    model = Sequential([
+        LSTM(64, input_shape=(X.shape[1], X.shape[2]), return_sequences=False),
+        Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mse')
 
-# Définition du modèle
-model = Sequential()
-model.add(LSTM(100, return_sequences=True, input_shape=(X.shape[1], X.shape[2])))
-model.add(Dropout(0.2))
+    history = model.fit(
+        X_train, y_train,
+        epochs=100,
+        batch_size=16,
+        validation_split=0.1,
+        verbose=1
+    )
 
-model.add(LSTM(100, return_sequences=True))
-model.add(Dropout(0.2))
+    # Prédictions
+    y_pred = model.predict(X_test)
 
-model.add(LSTM(100, return_sequences=False))
-model.add(Dropout(0.2))
+    # Inverser la normalisation (pour le prix)
+    y_test_actual = scaler.inverse_transform(
+        np.concatenate([
+            np.zeros((len(y_test), target_index)),
+            y_test.reshape(-1, 1),
+            np.zeros((len(y_test), scaled_data.shape[1] - target_index - 1))
+        ], axis=1)
+    )[:, target_index]
 
-model.add(Dense(50, activation='relu'))
-model.add(Dense(1))  # Couche de sortie
+    y_pred_actual = scaler.inverse_transform(
+        np.concatenate([
+            np.zeros((len(y_pred), target_index)),
+            y_pred,
+            np.zeros((len(y_pred), scaled_data.shape[1] - target_index - 1))
+        ], axis=1)
+    )[:, target_index]
 
-model.compile(optimizer='adam', loss='mean_squared_error')
+    # === Calcul des métriques ===
+    mae = mean_absolute_error(y_test_actual, y_pred_actual)
+    rmse = np.sqrt(mean_squared_error(y_test_actual, y_pred_actual))
+    mean_y = np.mean(y_test_actual)
 
-# Entraînement
-model.fit(X_train, y_train, epochs=83, batch_size=64, validation_data=(X_test, y_test), verbose=1)
+    if mean_y > 1e-3:
+        precision = 100 - (mae / mean_y) * 100
+    else:
+        precision = 0
+    precision = round(precision, 2)
+
+    if precision >= 90:
+        commentaire = "Excellente précision. Le modèle LSTM capture très bien les dynamiques du marché."
+    elif precision >= 80:
+        commentaire = "Bonne précision. Quelques fluctuations peuvent ne pas être bien anticipées."
+    elif precision >= 70:
+        commentaire = "Précision moyenne. Le modèle pourrait être amélioré avec plus de données ou un réglage fin."
+    else:
+        commentaire = "Précision faible. Le modèle a des difficultés à bien prédire les tendances du marché."
+
+    print("\n=== Évaluation du modèle ===")
+    print(f"Précision : {precision}%")
+    print(f"MAE (Erreur absolue moyenne) : {mae:.2f}")
+    print(f"RMSE (Erreur quadratique moyenne) : {rmse:.2f}")
+    print(f"Prochaine valeur prédite : {y_pred_actual[-1]:.2f}")
+    print(f"Commentaire global : {commentaire}")
+
+    return model, scaler, target_index, scaled_data, X_test, y_test, y_test_actual, y_pred_actual
 
 # Sauvegarde
-model.save('model/lstm_model.h5')
-joblib.dump(scaler, 'model/scaler.save')
-joblib.dump(target_index, 'model/target_index.save')
-joblib.dump(scaled_data, 'model/scaled_data.save')
+def save_all(model, scaler, target_index, scaled_data, X_test, y_test, model_dir='model'):
+    os.makedirs(model_dir, exist_ok=True)
+    model.save(f'{model_dir}/lstm_model.h5')
+    joblib.dump(scaler, f'{model_dir}/scaler_lstm.pkl')
+    joblib.dump(target_index, f'{model_dir}/target_index.pkl')
+    joblib.dump(scaled_data, f'{model_dir}/scaled_data.pkl')
+    np.save(f'{model_dir}/x_test_lstm.npy', X_test)
+    pd.DataFrame(y_test).to_csv(f'{model_dir}/y_test_lstm.csv', index=False)
+    print("Modèle, scaler, données test, et fichiers sauvegardés avec succès.")
 
-print("Modèle et fichiers sauvegardés avec succès.")
+# === MAIN ===
+if __name__ == "__main__":
+    seq_length = 12
+    X, y, scaler, target_index, scaled_data = prepare_data(seq_length=seq_length)
+    model, scaler, target_index, scaled_data, X_test, y_test, y_test_actual, y_pred_actual = train_model(
+        X, y, target_index, scaled_data, seq_length=seq_length)
+    save_all(model, scaler, target_index, scaled_data, X_test, y_test)
