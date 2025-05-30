@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify , request, send_file
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 import joblib
 import tensorflow as tf
@@ -23,9 +24,11 @@ app = Flask(__name__)
 model = tf.keras.models.load_model('model/lstm_model.h5', custom_objects={'mse': mse})
 
 # Charger les autres objets (scaler, target_index, scaled_data)
-scaler = joblib.load('model/scaler.save')
-target_index = joblib.load('model/target_index.save')
-scaled_data = joblib.load('model/scaled_data.save')
+scaler = joblib.load('model/scaler_lstm.pkl')
+target_index = joblib.load('model/target_index.pkl')
+scaled_data = joblib.load('model/scaled_data.pkl')
+y_test = pd.read_csv("model/y_test_lstm.csv").values  # les vraies valeurs
+X_test = np.load("model/x_test_lstm.npy")  # assure-toi d’avoir ces fichiers
 
 
 def get_price_evolution():
@@ -159,30 +162,68 @@ def prediction():
       encoder = joblib.load("model2/xgb_encoder.pkl")
 
       # Chargement des données de test
-      X_test = pd.read_csv("model2/x_test.csv")
+      X_test_xgb = pd.read_csv("model2/x_test.csv")
+      y_test_xgb = pd.read_csv("model2/y_test.csv")
+
 
       # Appliquer l'encodage si nécessaire
       # (seulement si tu n'as pas déjà encodé X_test avant de le sauvegarder)
       try:
-         X_test_encoded = encoder.transform(X_test)
+         X_test_encoded = encoder.transform(X_test_xgb)
       except:
-         X_test_encoded = X_test  # Si déjà encodé
+         X_test_encoded = X_test_xgb  # Si déjà encodé
 
       # Prendre la dernière ligne pour la prédiction
+      y_pred = model.predict(X_test_encoded)
       last_row = X_test_encoded[-1:]
       prediction = model.predict(last_row)[0]
       prix_arrondi = round(prediction, 2)
+      
+      # --- 4. Calcul des erreurs
+      mae = mean_absolute_error(y_test_xgb, y_pred)
+      rmse = math.sqrt(mean_squared_error(y_test_xgb, y_pred))
+      r2 = r2_score(y_test_xgb, y_pred)
+
+      
+      # --- 5. Calcul de la précision dynamique
+      precision_score = max(0, round(r2 * 100, 2))  # En pourcentage
+      if precision_score >= 90:
+         interpretation = "Très fiable : le modèle est très précis pour les prédictions actuelles."
+      elif precision_score >= 75:
+         interpretation = "Fiabilité moyenne : le modèle est globalement bon mais peut avoir des écarts."
+      else:
+         interpretation = "Peu fiable : le modèle présente des erreurs importantes."
 
       # Informations du modèle
       model_info = {
          "nom": "XGBoost",
-         "type": "Boosting",
+         "type": "Boosting, Approche par arbres de décision",
+         "description": """XGBoost (Extreme Gradient Boosting) est un algorithme d’apprentissage supervisé basé sur des arbres de décision successifs, où chaque nouvel arbre corrige les erreurs du précédent. Il est reconnu pour sa rapidité et sa précision, et constitue un excellent choix pour la prédiction du prix du pétrole en analysant les variables historiques.
+
+                        Caractéristiques principales :
+
+                        Optimisation des performances grâce à la parallélisation,
+
+                        Régularisation intégrée pour éviter l’overfitting,
+
+                        Gestion automatique des valeurs manquantes.
+
+                        Avantages :
+
+                        Très bon pour les ensembles de données tabulaires,
+
+                        Facile à interpréter (importance des variables). """,
          "date": "2025-05-17",
-         "precision": "91%"
+         "precision": f"{precision_score}%",
+         "commentaire_precision": interpretation,
+         "mae": f"{mae:.2f}",
+         "commentaire_mae": "L’erreur absolue moyenne mesure la différence moyenne entre les prédictions et les valeurs réelles.",
+         "rmse": f"{rmse:.2f}",
+         "commentaire_rmse": "L’erreur quadratique moyenne donne plus de poids aux grandes erreurs (sensibilité élevée aux erreurs importantes)."
       }
    else:
       # LSTM par défaut
-      last_input = scaled_data[-24:]
+      last_input = scaled_data[-12:]
       next_input = np.expand_dims(last_input, axis=0)
       next_pred_scaled = model.predict(next_input)
       next_pred = scaler.inverse_transform(np.concatenate([
@@ -191,11 +232,75 @@ def prediction():
             np.zeros((1, scaled_data.shape[1] - target_index - 1))
       ], axis=1))[:, target_index][0]
       prix_arrondi = round(next_pred, 2)
+      
+      
+      # Prédictions sur X_test
+      y_pred_scaled = model.predict(X_test)
+
+      # Recalage des prédictions (inverse de la normalisation)
+      y_pred = scaler.inverse_transform(
+         np.concatenate([
+            np.zeros((len(y_pred_scaled), target_index)),
+            y_pred_scaled,
+            np.zeros((len(y_pred_scaled), scaled_data.shape[1] - target_index - 1))
+         ], axis=1)
+      )[:, target_index]
+
+      # Recalage des vraies valeurs
+      y_true = scaler.inverse_transform(
+         np.concatenate([
+            np.zeros((len(y_test), target_index)),
+            y_test.reshape(-1, 1),
+            np.zeros((len(y_test), scaled_data.shape[1] - target_index - 1))
+         ], axis=1)
+      )[:, target_index]
+
+      # Calculs d’erreurs
+      mae = mean_absolute_error(y_true, y_pred)
+      rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+      precision = max(0, 100 - (mae / np.mean(y_true)) * 100)
+      precision_arrondie = round(precision, 2)
+
+      # Interprétation
+      if precision >= 90:
+         commentaire = "Excellente précision. Le modèle LSTM capture très bien les dynamiques du marché."
+      elif precision >= 80:
+         commentaire = "Bonne précision. Quelques fluctuations peuvent ne pas être bien anticipées."
+      elif precision >= 70:
+         commentaire = "Précision moyenne. Le modèle pourrait être amélioré avec plus de données ou un réglage fin."
+      else:
+         commentaire = "Précision faible. Le modèle a des difficultés à bien prédire les tendances du marché."
+
+      
       model_info = {
             "nom": "LSTM",
-            "type": "Réseau de neurones",
+            "type": "Réseau de neurones récurrents, Prédiction basée sur les séries temporelles",
+            "description": """Le modèle LSTM (Long Short-Term Memory) est une architecture de réseaux de neurones conçue pour traiter des données séquentielles comme les séries temporelles. Il est particulièrement adapté à la prévision du prix du pétrole, car il est capable d’apprendre des relations à long terme dans les données, ce qui est crucial dans les phénomènes économiques évolutifs.
+
+                        Fonctionnement interne :
+                        LSTM utilise une mémoire interne régulée par trois portes :
+
+                        Porte d’oubli : supprime les informations inutiles du passé,
+
+                        Porte d’entrée : sélectionne les nouvelles informations à stocker,
+
+                        Porte de sortie : détermine les informations à restituer.
+
+                        Ce mécanisme permet d’adapter le modèle aux tendances et variations du marché pétrolier.
+
+                        Avantages :
+
+                        Capacité à retenir des séquences longues,
+
+                        Très performant pour la modélisation de données non linéaires et bruyantes.
+
+                        """,
             "date": "2025-05-17",
-            "precision": "92%"
+            "precision": f"{precision_arrondie}%",
+            "mae": f"{mae:.2f}",
+            "rmse": f"{rmse:.2f}",
+            "commentaire": commentaire,
+            "prediction": prix_arrondi
       }
       
    date_maj = datetime.now().strftime("%d %B %Y")

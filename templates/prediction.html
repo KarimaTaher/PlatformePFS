@@ -80,8 +80,9 @@
     
         /* 📐 Mise en page centrée */
         .section-wrapper {
-            max-width: 800px;
-            margin: auto;
+            max-width: 1200px; /* 🧱 Plus large que 800px */
+            margin: 0 auto;    /* 🎯 Centre horizontalement */
+            padding: 20px;     /* 🧘‍♀️ Un peu d’espace intérieur */
         }
     
         /* 🖼️ Image dans les cartes */
@@ -183,18 +184,41 @@
         </div>
         
 
-        <!-- 📋 Informations du modèle -->
-        <div class="card custom-card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Informations du modèle</h5>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>Nom :</strong> {{ model_info.nom }}</li>
-                    <li class="list-group-item"><strong>Type :</strong> {{ model_info.type }}</li>
-                    <li class="list-group-item"><strong>Date d’entraînement :</strong> {{ model_info.date }}</li>
-                    <li class="list-group-item"><strong>Précision :</strong> {{ model_info.precision }}</li>
-                </ul>
-            </div>
-        </div>
+<!-- 📋 Informations du modèle -->
+<div class="card custom-card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Informations du modèle</h5>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Nom :</strong> {{ model_info.nom }}</li>
+            <li class="list-group-item"><strong>Type :</strong> {{ model_info.type }}</li>
+            <li class="list-group-item"><strong>Description :</strong><br>{{ model_info.description | safe }}</li>
+            <li class="list-group-item"><strong>Date d’entraînement :</strong> {{ model_info.date }}</li>
+            <li class="list-group-item"><strong>Précision :</strong> {{ model_info.precision }}</li>
+            {% if model_info.commentaire_precision %}
+                <li class="list-group-item"><strong>Commentaire sur la précision :</strong> {{ model_info.commentaire_precision }}</li>
+            {% endif %}
+            {% if model_info.mae %}
+                <li class="list-group-item"><strong>MAE (Erreur absolue moyenne) :</strong> {{ model_info.mae }}</li>
+            {% endif %}
+            {% if model_info.commentaire_mae %}
+                <li class="list-group-item"><strong>Explication MAE :</strong> {{ model_info.commentaire_mae }}</li>
+            {% endif %}
+            {% if model_info.rmse %}
+                <li class="list-group-item"><strong>RMSE (Erreur quadratique moyenne) :</strong> {{ model_info.rmse }}</li>
+            {% endif %}
+            {% if model_info.commentaire_rmse %}
+                <li class="list-group-item"><strong>Explication RMSE :</strong> {{ model_info.commentaire_rmse }}</li>
+            {% endif %}
+            {% if model_info.prediction %}
+                <li class="list-group-item"><strong>Prochaine valeur prédite :</strong> {{ model_info.prediction }}</li>
+            {% endif %}
+            {% if model_info.commentaire %}
+                <li class="list-group-item"><strong>Commentaire global :</strong> {{ model_info.commentaire }}</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
 
         <!-- 📈 Graphique -->
         <div class="card custom-card mb-4">
