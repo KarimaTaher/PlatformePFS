@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, jsonify , request, send_file
 import numpy as np
 import joblib
