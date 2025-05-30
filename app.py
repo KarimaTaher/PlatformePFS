@@ -362,6 +362,9 @@ def export_pdf():
 
    return send_file(pdf_output, as_attachment=True, download_name='petroleum_trends.pdf', mimetype='application/pdf')
 
+@app.route('/events')
+def eventpage():
+   return render_template('event.html')
 
 @app.route('/')
 def homepage():
