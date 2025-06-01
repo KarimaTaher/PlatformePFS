@@ -17,7 +17,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import tempfile
 import os
-
+import requests
+from bs4 import BeautifulSoup
+from apscheduler.schedulers.background import BackgroundScheduler
+from data_updater import append_new_data_to_excel
 app = Flask(__name__)
 
 # Charger le modèle sans custom_objects pour l'instant
@@ -325,7 +328,8 @@ def prediction():
                            event_pie_data=event_pie_data,
                            selected_model=selected_model,
                            model_info=model_info)
-   
+
+
 @app.route('/data')
 def data_table():
    df, _ = get_full_data()
@@ -355,6 +359,7 @@ def export_excel():
       df.to_excel(writer, index=False, sheet_name='Data')
    output.seek(0)
    return send_file(output, download_name="donnees_petrole.xlsx", as_attachment=True)
+
 def clean_text_for_pdf(text):
    replacements = {
       '–': '-',   # tiret moyen
@@ -467,13 +472,53 @@ def export_pdf():
 
    return send_file(pdf_output, as_attachment=True, download_name='petroleum_trends.pdf', mimetype='application/pdf')
 
+
+def scrape_oilprice_news():
+   url = "https://oilprice.com/Latest-Energy-News/World-News/"
+   headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+   }
+
+   response = requests.get(url, headers=headers)
+   soup = BeautifulSoup(response.text, 'html.parser')
+
+   news_items = []
+   article_links = soup.find_all('a', href=True)
+
+   for link in article_links:
+      title_tag = link.find('h2', class_='categoryArticle__title')
+      if title_tag:
+         title = title_tag.get_text(strip=True)
+         href = link['href']
+         parent = link.parent
+         excerpt_tag = parent.find('p', class_='categoryArticle__excerpt')
+         excerpt = excerpt_tag.get_text(strip=True) if excerpt_tag else 'No excerpt available'
+
+         news_items.append({
+            'title': title,
+            'href': href,
+            'excerpt': excerpt
+         })
+
+   return news_items
 @app.route('/events')
 def eventpage():
-   return render_template('event.html')
+   news_items = scrape_oilprice_news()
+   return render_template('event.html', news_items=news_items)
 
 @app.route('/')
 def homepage():
    return render_template('index.html')
+
+
+def scheduled_job():
+   print("Running scheduled data update...")
+   append_new_data_to_excel(r'C:\Users\USER\PycharmProjects\PlatformePFS\model\petrole_ai.xlsx')
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(scheduled_job, 'cron', day=1, hour=0, minute=0)  # 12:00 AM on the first day of every month
+scheduler.start()
 
 if __name__ == '__main__':
    app.run(debug=True, host='127.0.0.1', port=5001)
